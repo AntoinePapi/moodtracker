@@ -1,0 +1,9 @@
+node_modules
+dist
+dev-dist
+.vercel
+.env.local
+.claude
+qr-mobile.png
+.DS_Store
+supabase/.temp
