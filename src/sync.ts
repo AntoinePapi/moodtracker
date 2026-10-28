@@ -5,6 +5,9 @@ type EntryOp = { t: 'entry'; themeId: string; day: string; entry: DayEntry | nul
 type BonheurOp = { t: 'bonheur'; day: string; text: string }
 export type Op = EntryOp | BonheurOp
 
+// The database refused the data itself (limits, bad value): retrying can't help
+const isRejected = (e: unknown) => /^(22|23|P0001)/.test((e as { code?: string })?.code ?? '')
+
 const opKey = (o: Op) => (o.t === 'entry' ? `e:${o.themeId}:${o.day}` : `b:${o.day}`)
 
 const read = <T,>(k: string): T | null => {
@@ -89,13 +92,26 @@ export function createSync(userId: string) {
     if (flushing) return flushing
     const ops = Object.entries(queue)
     if (!ops.length || !navigator.onLine) return Promise.resolve()
+    // only drop what was sent; an op edited meanwhile stays queued
+    const drop = (sent: [string, Op][]) => {
+      for (const [k, op] of sent) if (queue[k] === op) delete queue[k]
+      save()
+    }
     flushing = send(ops)
-      .then(() => {
-        // only drop what was sent; an op edited meanwhile stays queued
-        for (const [k, op] of ops) if (queue[k] === op) delete queue[k]
-        save()
+      .then(() => drop(ops))
+      .catch(async (e) => {
+        if (!isRejected(e)) return schedule(5000)
+        // one bad op fails the whole batch: replay one by one and discard only the refused ones
+        for (const op of ops) {
+          try {
+            await send([op])
+            drop([op])
+          } catch (err) {
+            if (isRejected(err)) drop([op])
+            else return schedule(5000)
+          }
+        }
       })
-      .catch(() => schedule(5000))
       .finally(() => {
         flushing = null
       })

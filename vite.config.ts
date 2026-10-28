@@ -1,6 +1,10 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
+import vercel from './vercel.json'
+
+// `vite preview` serves the same security headers as production, so CSP breakage shows up locally
+const securityHeaders = Object.fromEntries(vercel.headers[0].headers.map((h) => [h.key, h.value]))
 
 export default defineConfig({
   plugins: [
@@ -39,4 +43,5 @@ export default defineConfig({
     }),
   ],
   server: { host: true },
+  preview: { host: true, port: 5180, headers: securityHeaders },
 })

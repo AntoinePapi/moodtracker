@@ -35,6 +35,7 @@ export function DaySheet({ theme, day, entry, bonheur, onChange, onBonheur, onCl
         <span>Notes</span>
         <textarea
           rows={2}
+          maxLength={2000}
           placeholder="Quelques mots sur la journée…"
           value={entry?.note ?? ''}
           onChange={(e) => onChange({ note: e.target.value })}
@@ -61,6 +62,7 @@ export function BonheurField({ value, onChange }: { value: string; onChange: (te
       <span>✿ Mon petit bonheur du jour</span>
       <input
         placeholder="Un café au soleil, un message d'une amie…"
+        maxLength={500}
         value={value}
         onChange={(e) => onChange(e.target.value)}
       />
